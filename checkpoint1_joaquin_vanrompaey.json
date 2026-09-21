@@ -1,0 +1,175 @@
+{
+  "name": "Checkpoint 1 - Agente Base de Calificación de Leads (M1)",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "options": {
+          "showWelcomeScreen": false,
+          "subtitle": "Contanos qué necesitás automatizar y te ayudamos a evaluarlo.",
+          "title": "Estudio de Automatización - Calificación de Leads",
+          "responseMode": "streaming"
+        }
+      },
+      "id": "06ae0df2-3a94-48c5-8e9e-8d2ee4eeecbc",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [240, 352],
+      "webhookId": "1992fb47-eb4f-48b9-a302-bffb3cd9c5fe"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "cachedResultName": "Claude Sonnet 5",
+          "mode": "list",
+          "value": "claude-sonnet-5"
+        },
+        "options": {}
+      },
+      "id": "437c7ee3-b220-4e51-8330-df44c71d1857",
+      "name": "Anthropic Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [464, 624],
+      "credentials": {
+        "anthropicApi": {
+          "id": "REEMPLAZAR_CREDENCIAL_ANTHROPIC",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Usá esta herramienta para registrar en la planilla de seguimiento comercial cada lead que hayas terminado de calificar dentro de la conversación actual. Invocala de forma autónoma, sin pedir confirmación al usuario, en el momento exacto en que dispongas de al menos: el nombre del interesado, la necesidad concreta que expresó y la categoría que le asignaste (VIP, Estándar o Descartado). No actives esta herramienta si la conversación todavía está en etapa exploratoria, si falta información esencial para calificar al lead, o si el mensaje del usuario no corresponde a una consulta comercial real (saludos, pruebas, spam o temas fuera del ámbito de servicios de automatización). Cada registro debe incluir nombre del contacto, empresa (si la mencionó), necesidad detectada, categoría asignada, fecha y hora, y un resumen breve de la conversación. Si el mismo lead ya fue registrado antes en esta conversación, no dupliques la fila: actualizá el registro existente en lugar de crear uno nuevo.",
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "cachedResultName": "Checkpoint 1 - Leads (IA AUT Avanzado)",
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_PLANILLA_GOOGLE_SHEETS"
+        },
+        "sheetName": {
+          "__rl": true,
+          "cachedResultName": "Leads",
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["Nombre"],
+          "schema": [
+            { "id": "Nombre", "displayName": "Nombre", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": true, "removed": false },
+            { "id": "Empresa", "displayName": "Empresa", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false, "removed": false },
+            { "id": "Necesidad", "displayName": "Necesidad", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false, "removed": false },
+            { "id": "Categoria", "displayName": "Categoria", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false, "removed": false },
+            { "id": "Fecha", "displayName": "Fecha", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false, "removed": false },
+            { "id": "Resumen", "displayName": "Resumen", "required": false, "defaultMatch": false, "display": true, "type": "string", "canBeUsedToMatch": false, "removed": false }
+          ],
+          "value": {
+            "Nombre": "={{ $fromAI('nombre', 'Nombre del contacto') }}",
+            "Empresa": "={{ $fromAI('empresa', 'Empresa del contacto, si la mencionó') }}",
+            "Necesidad": "={{ $fromAI('necesidad', 'Necesidad detectada en la conversación') }}",
+            "Categoria": "={{ $fromAI('categoria', 'Categoría del lead: VIP, Estandar o Descartado') }}",
+            "Fecha": "={{ $now.toISO() }}",
+            "Resumen": "={{ $fromAI('resumen', 'Resumen breve de la conversación') }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "ea01966d-f262-4dfd-a42e-efd41c3f3b9b",
+      "name": "Google Sheets Tool - Registrar Lead",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [640, 624],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REEMPLAZAR_CREDENCIAL_GOOGLE_SHEETS",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "ROL\nSos el Asistente de Calificación de Leads del estudio de automatización de Joaquin Van Rompaey. Tu función es atender el primer contacto comercial que llega por chat, entender qué necesita el interesado y calificarlo según su potencial como cliente. Tenés disponible la herramienta \"Google Sheets Tool - Registrar Lead\" para dejar constancia de cada lead calificado.\n\nAMBITO\nAtendés únicamente consultas comerciales relacionadas con servicios de automatización con IA: automatización de procesos, integración de herramientas (CRM, planillas, comunicación), agentes de IA y flujos de trabajo con n8n o Make. No respondés preguntas fuera de este rubro: soporte técnico de terceros, temas personales, consultas legales, médicas o cualquier tema ajeno al negocio.\n\nOBJETIVO\n1. Identificar el nombre, la empresa (si aplica) y la necesidad concreta del interesado.\n2. Determinar la categoría del lead: VIP (presupuesto claro, urgencia alta, encaja con los servicios ofrecidos), Estandar (interés genuino pero sin definición completa) o Descartado (fuera de alcance o sin intención real de contratar).\n3. Registrar el lead calificado en la planilla de seguimiento comercial usando la herramienta conectada, una sola vez que tengas los datos mínimos.\n4. Cerrar la conversación con una respuesta clara sobre los próximos pasos.\n\nREGLAS Y ESCALAMIENTO\n- No cotizás precios exactos ni cerrás acuerdos comerciales: informás que un presupuesto detallado se envía por separado.\n- No accedés, modificás ni eliminás información fuera del lead que estás procesando en este momento.\n- No mantenés conversaciones que se desvíen del propósito comercial definido en este mensaje.\n- Ante una consulta ambigua, pedís una aclaración puntual antes de calificar el lead.\n- Si el interesado manifiesta una urgencia crítica o pide hablar con una persona del equipo, escalás indicando que un responsable se va a comunicar a la brevedad, sin prometer plazos específicos.\n- Redactás siempre en español rioplatense, en tono profesional y directo, sin utilizar lenguaje inclusivo (evitar formas como \"todos/as\", \"bienvenidos/as\", \"amigues\"): usá la gramática estándar del español.\n- No inventás información sobre servicios, precios o plazos que no te haya sido provista explícitamente en este mensaje.",
+          "maxIterations": 7,
+          "returnIntermediateSteps": true
+        }
+      },
+      "id": "cc9aa1dc-b282-445d-9932-335403700d3b",
+      "name": "AI Agent - Calificacion de Leads",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [544, 352]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "cachedResultName": "checkpoint1-agente-leads",
+          "mode": "id",
+          "value": "REEMPLAZAR_ID_CANAL_SLACK"
+        },
+        "text": "=Log de Ejecucion - Agente de Calificacion de Leads\n\nEntrada del usuario:\n{{ $('When chat message received').item.json.chatInput }}\n\nRespuesta del agente:\n{{ $json.output }}\n\nPasos intermedios (herramientas invocadas): {{ $json.intermediateSteps ? $json.intermediateSteps.length : 0 }}\n\nReporte generado automaticamente para supervision humana.",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "22f6c2a3-8b08-4f1e-be5f-b9e3b3eece4d",
+      "name": "Slack - Reporte de Observabilidad",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [864, 352],
+      "webhookId": "38ba5f2c-31de-41ad-abbb-0e0fa142e822",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "REEMPLAZAR_CREDENCIAL_SLACK",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          { "node": "AI Agent - Calificacion de Leads", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          { "node": "AI Agent - Calificacion de Leads", "type": "ai_languageModel", "index": 0 }
+        ]
+      ]
+    },
+    "Google Sheets Tool - Registrar Lead": {
+      "ai_tool": [
+        [
+          { "node": "AI Agent - Calificacion de Leads", "type": "ai_tool", "index": 0 }
+        ]
+      ]
+    },
+    "AI Agent - Calificacion de Leads": {
+      "main": [
+        [
+          { "node": "Slack - Reporte de Observabilidad", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}
